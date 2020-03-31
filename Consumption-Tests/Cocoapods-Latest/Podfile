@@ -1,0 +1,19 @@
+workspace 'OKP.xcworkspace'
+
+source 'https://github.com/CocoaPods/Specs.git'
+platform :ios, '10.0'
+use_frameworks!
+
+
+target 'iOS Example' do
+	project 'iOS Example Swift/iOS Example Swift.xcodeproj'
+	#pod 'PusherSwift', '~> 7.2'
+	pod 'PusherSwift', :path => '../pusher-websocket-swift-for-client-consumption'
+end
+
+
+target 'iOS Example Obj-C' do
+	project 'iOS Example Obj-C/iOS Example Obj-C.xcodeproj'
+	#pod 'PusherSwift', '~> 7.2'
+	pod 'PusherSwift', :path => '../pusher-websocket-swift-for-client-consumption'
+end
