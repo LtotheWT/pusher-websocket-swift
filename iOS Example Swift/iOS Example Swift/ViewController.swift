@@ -23,8 +23,9 @@ class ViewController: UIViewController, PusherDelegate {
 
         // Only use your secret here for testing or if you're sure that there's
         // no security risk
-//        let pusherClientOptions = PusherClientOptions(authMethod: .inline(secret: "YOUR_APP_SECRET"))
-//        pusher = Pusher(key: "YOUR_APP_KEY", options: pusherClientOptions)
+        let pusherHost = PusherHost.cluster("eu")
+        let pusherClientOptions = PusherClientOptions(authMethod: .endpoint(authEndpoint: "http://localhost:3030/pusher/auth"), host: pusherHost)
+        pusher = Pusher(key: "1ef0aa923b0e32063ff8", options: pusherClientOptions)
 
 //        // Use this if you want to try out your auth endpoint
 //        let optionsWithEndpoint = PusherClientOptions(
@@ -56,7 +57,7 @@ class ViewController: UIViewController, PusherDelegate {
         })
 
         // subscribe to a channel
-        let myChannel = pusher.subscribe("my-channel")
+        let myChannel = pusher.subscribe("private-encrypted-OKP-channel")
 
         // bind a callback to event "my-event" on that channel
         let _ = myChannel.bind(eventName: "my-event", eventCallback: { (event: PusherEvent) in

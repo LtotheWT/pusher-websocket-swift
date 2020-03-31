@@ -1,0 +1,26 @@
+source 'https://github.com/CocoaPods/Specs.git'
+
+platform :ios, '10.0'
+use_frameworks!
+
+workspace 'Cocoapods-Latest.xcworkspace'
+
+target 'Swift-iOS' do
+	project 'Swift.xcodeproj'
+	pod 'PusherSwift', :path => '../../'
+end
+
+target 'Swift-macOS' do
+	project 'Swift.xcodeproj'
+	pod 'PusherSwift', :path => '../../'
+end
+
+target 'ObjectiveC-iOS' do
+	project 'ObjectiveC.xcodeproj'
+	pod 'PusherSwift', :path => '../../'
+end
+
+target 'ObjectiveC-macOS' do
+	project 'ObjectiveC.xcodeproj'
+	pod 'PusherSwift', :path => '../../'
+end
