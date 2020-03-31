@@ -98,15 +98,27 @@ echo "TEMP_TAG_NAME=$TEMP_TAG_NAME"
 # Validation Successfully, perform the checkout #
 #################################################
 
-# Temporarily commit all changes in the working copy
-git add -A 
-git commit -m "Temporary commit"
+
+# Check the status of the working copy
+if [ -z "$(git status --porcelain)" ]; then 
+	TEMP_COMMIT_REQUIRED=0
+else  # Uncommitted changes
+	TEMP_COMMIT_REQUIRED=1
+fi
+
+if (( $TEMP_COMMIT_REQUIRED )); then
+	# Temporarily commit all changes in the working copy
+	git add -A 
+	git commit -m "Temporary commit"
+fi
 
 # Immediately tag the commit 
 git tag "$TEMP_TAG_NAME"
 
-# Rollback the temporary commit, reverting the working copy back where it started
-git reset HEAD~
+if (( $TEMP_COMMIT_REQUIRED )); then
+	# Rollback the temporary commit, reverting the working copy back where it started
+	git reset HEAD~
+fi
 
 # Create/update the Cartfile (in the specified WORKING_DIRECTORY).  This might output for example:
 # git "file:///Users/me/Code/pusher-websocket-swift" "2020-03-30-12-57-46"
