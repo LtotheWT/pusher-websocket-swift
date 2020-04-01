@@ -18,15 +18,17 @@ struct DebugConsoleMessage: Codable {
 extension ViewController {
     
     func makeAndLaunchPusher() -> Pusher {
-
-        // Only use your secret here for testing or if you're sure that there's  security risk
-        let pusherOptions = PusherClientOptions(authMethod: .inline(secret: "YOUR_APP_SECRET"))
+//        // Only use your secret here for testing or if you're sure that there's  security risk
+//        let pusherOptions = PusherClientOptions(authMethod: .inline(secret: "YOUR_APP_SECRET"))
 
 //        // Use this if you want to try out your auth endpoint
 //        let pusherOptions = PusherClientOptions(
 //            authMethod: AuthMethod.authRequestBuilder(authRequestBuilder: AuthRequestBuilder())
 //        )
-        let pusher = Pusher(key: "YOUR_APP_KEY", options: pusherOptions)
+
+        let pusherHost = PusherHost.cluster("eu")
+        let pusherOptions = PusherClientOptions(authMethod: .endpoint(authEndpoint: "http://localhost:3030/pusher/auth"), host: pusherHost)
+        let pusher = Pusher(key: "1ef0aa923b0e32063ff8", options: pusherOptions)
 
         pusher.delegate = self
 
@@ -50,7 +52,7 @@ extension ViewController {
         })
 
         // subscribe to a channel
-        let myChannel = pusher.subscribe("my-channel")
+        let myChannel = pusher.subscribe("private-encrypted-OKP-channel")
 
         // bind a callback to event "my-event" on that channel
         let _ = myChannel.bind(eventName: "my-event", eventCallback: { (event: PusherEvent) in

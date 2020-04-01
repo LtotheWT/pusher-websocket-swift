@@ -31,14 +31,20 @@
 
 - (Pusher *)makeAndLaunchPusher {
     
-    OCAuthMethod *authMethod = [[OCAuthMethod alloc] initWithSecret:@"YOUR_APP_SECRET"];
-    PusherClientOptions *options = [[PusherClientOptions alloc] initWithAuthMethod:authMethod];
+    OCAuthMethod *authMethod = [[OCAuthMethod alloc] initWithAuthEndpoint:@"http://localhost:3030/pusher/auth"];
+    OCPusherHost *host = [[OCPusherHost alloc] initWithCluster:@"eu"];
+    PusherClientOptions *options = [[PusherClientOptions alloc] initWithOcAuthMethod:authMethod
+                                                                       autoReconnect:true
+                                                                              ocHost:host
+                                                                                port:nil
+                                                                           encrypted:true
+                                                                     activityTimeout:nil];
 
     // Use this if you want to try out your auth Endpoint
 //    OCAuthMethod *endpointAuthMethod = [[OCAuthMethod alloc] initWithAuthRequestBuilder:[[AuthRequestBuilder alloc] init]];
 //    PusherClientOptions *optionsWithEndpoint = [[PusherClientOptions alloc] initWithAuthMethod:endpointAuthMethod];
 
-    Pusher *pusher = [[Pusher alloc] initWithAppKey:@"YOUR_APP_KEY" options:options];
+    Pusher *pusher = [[Pusher alloc] initWithAppKey:@"1ef0aa923b0e32063ff8" options:options];
     pusher.connection.delegate = self;
 
     pusher.connection.userDataFetcher = ^PusherPresenceChannelMember* () {
@@ -66,7 +72,7 @@
     [pusher connect];
 
     // subscribe to a public channel
-    PusherChannel *myChannel = [pusher subscribeWithChannelName:@"my-channel"];
+    PusherChannel *myChannel = [pusher subscribeWithChannelName:@"private-encrypted-OKP-channel"];
 
     // bind a callback to an event on that channel
     [myChannel bindWithEventName:@"my-event" eventCallback:^void (PusherEvent *event) {

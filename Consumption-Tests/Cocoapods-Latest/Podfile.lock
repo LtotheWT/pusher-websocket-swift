@@ -1,0 +1,31 @@
+PODS:
+  - PusherSwift (7.2.0):
+    - ReachabilitySwift (= 4.3.0)
+    - Sodium (~> 0.8.0)
+    - Starscream (~> 3.0.5)
+  - ReachabilitySwift (4.3.0)
+  - Sodium (0.8.0)
+  - Starscream (3.0.6)
+
+DEPENDENCIES:
+  - PusherSwift (from `../../`)
+
+SPEC REPOS:
+  https://github.com/CocoaPods/Specs.git:
+    - ReachabilitySwift
+    - Sodium
+    - Starscream
+
+EXTERNAL SOURCES:
+  PusherSwift:
+    :path: "../../"
+
+SPEC CHECKSUMS:
+  PusherSwift: 7f574da496818b2d21248ad9c949dd8a0934df43
+  ReachabilitySwift: 408477d1b6ed9779dba301953171e017c31241f3
+  Sodium: 63c0ca312a932e6da481689537d4b35568841bdc
+  Starscream: ef3ece99d765eeccb67de105bfa143f929026cf5
+
+PODFILE CHECKSUM: bb3764b4413b0b60ee49f23d821fae2612617ece
+
+COCOAPODS: 1.9.1
