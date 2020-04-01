@@ -33,6 +33,11 @@ while getopts ":w:x:" opt; do
             echo "WORKING_DIRECTORY_UNEXPANDED=${WORKING_DIRECTORY_UNEXPANDED}"
             echo "WORKING_DIRECTORY=${WORKING_DIRECTORY}"
         ;;
+        x)
+            echo "-x (Xcode Version Filename) was triggered, Parameter: $OPTARG"
+            XCODE_VERSION_FILENAME=$OPTARG
+            echo "XCODE_VERSION_FILENAME=${XCODE_VERSION_FILENAME}"
+        ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
             exit 1 # exit with non-zero code to indicate failure
@@ -50,94 +55,59 @@ if [ -z "${WORKING_DIRECTORY}" ]; then
     exit 1 # exit with non-zero code to indicate failure
 fi
 
-
-####################
-# Import Functions #
-####################
-
-source "$WORKING_DIRECTORY/../Shared/getXcodeVersionFor.sh"
+if [ -z "${XCODE_VERSION_FILENAME}" ]; then
+    echo "ERROR: Mandatory -x (Xcode Version Filename) argument was NOT specified" >&2
+    exit 1 # exit with non-zero code to indicate failure
+fi
 
 
 ######################
 # Check Xcode-Select #
 ######################
 
-getXcodeVersionFor "$WORKING_DIRECTORY" # should set XCODE_VERSION
-echo "XCODE_VERSION=$XCODE_VERSION"
-
+SCRIPT_DIRECTORY="$(dirname $0)"
+XCODE_VERSION_FILEPATH="$SCRIPT_DIRECTORY/../$XCODE_VERSION_FILENAME"
+XCODE_VERSION=$( head -n 1 "$XCODE_VERSION_FILEPATH" )
 ACTUAL_XCODE_VERSION=$( xcodebuild -version | head -n 1)
+echo "SCRIPT_DIRECTORY=${SCRIPT_DIRECTORY}"
+echo "XCODE_VERSION_FILEPATH=${XCODE_VERSION_FILEPATH}"
+echo "XCODE_VERSION=${XCODE_VERSION}"
 echo "ACTUAL_XCODE_VERSION=${ACTUAL_XCODE_VERSION}"
 
 if [ "$XCODE_VERSION" != "$ACTUAL_XCODE_VERSION" ]; then
     echo "ERROR: The Xcode Version specified ($XCODE_VERSION) does not match the current Xcode version ($ACTUAL_XCODE_VERSION)" >&2
     echo "Install the appropriate version of Xcode and use \`xcode-select -s\` to select the appropriate version."
     echo "Note: the format of the desired Xcode Version should exactly match what is output with \`xcodebuild -version\`."
-    say "Failure. The wrong version of ex-code is selected"
     exit 1 # exit with non-zero code to indicate failure
 fi
-
-
-########################
-# Setup some variables #
-########################
-
-# Temporarily change directory into the $WORKING_DIRECTORY
-pushd "${WORKING_DIRECTORY}"
-
-REPO_ROOT_DIR_PATH=$( git rev-parse --show-toplevel )
-REPO_ROOT_ABS_DIR_PATH="$( cd "$REPO_ROOT_DIR_PATH" >/dev/null 2>&1 ; pwd -P )"
-echo "REPO_ROOT_DIR_PATH=$REPO_ROOT_DIR_PATH"
-echo "REPO_ROOT_ABS_DIR_PATH=$REPO_ROOT_ABS_DIR_PATH"
-
-# For a temporary tag name we'll use the current date/time
-TEMP_TAG_NAME="$(date '+%Y-%m-%d-%H-%M-%S')"
-echo "TEMP_TAG_NAME=$TEMP_TAG_NAME"
 
 
 #################################################
 # Validation Successfully, perform the checkout #
 #################################################
 
-# Check the status of the working copy to determine if we need to commit the code temporarily
-if [ -z "$(git status --porcelain)" ]; then 
-	TEMP_COMMIT_REQUIRED=0
-else  # Uncommitted changes
-	TEMP_COMMIT_REQUIRED=1
-fi
+# Temporarily change directory into the $WORKING_DIRECTORY
+pushd "${WORKING_DIRECTORY}"
 
-if (( $TEMP_COMMIT_REQUIRED )); then
-	# Temporarily commit all changes in the working copy
-	git add -A 
-	git commit -m "Temporary commit"
-fi
+# Remove any existing Cocoapods related files/directories
+rm -f "Podfile"
+rm -f "Podfile.lock"
+rm -rf "Pods"
 
-# Immediately tag the commit 
-git tag "$TEMP_TAG_NAME"
+IOS_VERSION="8"
+MAC_VERSION="10.11"
 
-if (( $TEMP_COMMIT_REQUIRED )); then
-	# Rollback the temporary commit, reverting the working copy back where it started
-	git reset HEAD~
-fi
+# Create the Podfile from the template (in the specified WORKING_DIRECTORY)
+# replacing all the appropriate placeholders.
+sed <Podfile.template \
+    -e "s#{IOS_VERSION}#${IOS_VERSION}#" \
+    -e "s#{MAC_VERSION}#${MAC_VERSION}#" \
+    >Podfile
 
-# Create/update the Cartfile (in the specified WORKING_DIRECTORY).  This might output for example:
-# git "file:///Users/me/Code/pusher-websocket-swift" "2020-03-30-12-57-46"
-echo "git \"file://$REPO_ROOT_ABS_DIR_PATH\" \"$TEMP_TAG_NAME\"" > "$WORKING_DIRECTORY/Cartfile"
-
-# Before we perform the `carthage update` tell bash to continue if an error is encountered 
-# This ensures that the tag gets removed even if the carthage command fails
-set +e
-
-# Perform the `carthage update` (using the Cartfile we just created/updated)
-carthage update
-CARTHAGE_UPDATE_STATUS_CODE=$?
-echo "CARTHAGE_UPDATE_STATUS_CODE=$CARTHAGE_UPDATE_STATUS_CODE"
-
-set -e
-
-# Delete the temporarily created git tag
-git tag -d "$TEMP_TAG_NAME"
+# Perform the `pod install` (using the Cartfile we just created/updated)
+pod deintegrate Swift.xcodeproj
+pod deintegrate ObjectiveC.xcodeproj
+pod install
 
 # Return to original directory
 popd
-
-exit $CARTHAGE_UPDATE_STATUS_CODE
