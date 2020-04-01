@@ -22,6 +22,7 @@ SUMMARY_LOG_OUTPUT=""
 ####################
 
 source "$SCRIPT_DIRECTORY/Shared/assignXcodeAppPathFor.sh"
+source "$SCRIPT_DIRECTORY/Shared/getXcodeVersionFor.sh"
 
 
 #####################
@@ -74,7 +75,7 @@ echo "SHOULD_SKIP_COCOAPODS=$SHOULD_SKIP_COCOAPODS"
 ####################
 
 # Usage: `runXcodeBuild "WORKSPACE_FILEPATH" "SCHEME"`
-runXcodeBuild() {
+function runXcodeBuild {
 	
 	local WORKSPACE_FILEPATH="$1"
 	local SCHEME="$2"
@@ -96,9 +97,66 @@ runXcodeBuild() {
 	fi
 }
 
-# Usage: `runCarthageBuilds "MINIMUM_SUPPORTED_XCODE_VERSION" "Carthage-Minimum"`
-performCarthageTests() {
-	echo "------ BEGIN performCarthageTests ($2) ------"
+# Usage: `performTests "Carthage-Minimum"`
+function performTests {
+	echo "------ BEGIN: $FUNCNAME $@ ------"
+
+	local NAME="$1"
+	echo "NAME=$NAME"
+	
+	SUMMARY_LOG_OUTPUT+="\n\n+++++ $NAME +++++"
+	
+	if [[ "$NAME" == "Carthage-"* ]] && (( $SHOULD_SKIP_CARTHAGE )); then 
+		echo "SKIPPING '$NAME'"	
+		echo "------ END: $FUNCNAME ------"
+		SUMMARY_LOG_OUTPUT+="\n 🟡 SKIPPING"
+		return 0
+	elif [[ "$NAME" == "Cocoapods-"* ]] && (( $SHOULD_SKIP_COCOAPODS )); then 
+		echo "SKIPPING '$NAME'"	
+		echo "------ END: $FUNCNAME ------"
+		SUMMARY_LOG_OUTPUT+="\n 🟡 SKIPPING"
+		return 0
+	fi
+
+	local WORKING_DIRECTORY="$SCRIPT_DIRECTORY/$NAME"
+	echo "WORKING_DIRECTORY=$WORKING_DIRECTORY"
+	
+	getXcodeVersionFor "$NAME" # should set XCODE_VERSION
+	echo "XCODE_VERSION=$XCODE_VERSION"
+	
+	assignXcodeAppPathFor "$XCODE_VERSION" # should set XCODE_APP_PATH
+	echo "XCODE_APP_PATH=$XCODE_APP_PATH"	
+	
+	local DESIRED_XCODE_SELECT="$XCODE_APP_PATH/Contents/Developer"
+	local WORKSPACE_FILEPATH="$WORKING_DIRECTORY/$NAME.xcworkspace"
+	echo "DESIRED_XCODE_SELECT=$DESIRED_XCODE_SELECT"
+	echo "WORKSPACE_FILEPATH=$WORKSPACE_FILEPATH"
+
+	CURRENT_XCODE_SELECT=$( xcode-select -p )
+	echo "CURRENT_XCODE_SELECT=$CURRENT_XCODE_SELECT"
+	
+	if [ "$CURRENT_XCODE_SELECT" != "$DESIRED_XCODE_SELECT" ]; then
+		echo "***** Will perform xcode-select to '$DESIRED_XCODE_SELECT'"
+		say "ex code selecting, your password may be required, please check"
+		sudo xcode-select -s "$DESIRED_XCODE_SELECT"
+	fi
+
+	if (( $SHOULD_CARTHAGE_CHECKOUT )); then
+		sh "$WORKING_DIRECTORY/checkout.sh"
+	fi
+
+
+	runXcodeBuild "$WORKSPACE_FILEPATH" "Swift-iOS"
+	runXcodeBuild "$WORKSPACE_FILEPATH" "Swift-macOS"
+	runXcodeBuild "$WORKSPACE_FILEPATH" "ObjectiveC-iOS"
+	runXcodeBuild "$WORKSPACE_FILEPATH" "ObjectiveC-macOS"
+	
+	echo "------ END: $FUNCNAME ------"
+}
+
+# Usage: `performCocoapodsTests "MINIMUM_SUPPORTED_XCODE_VERSION" "Cocoapods-Minimum"`
+performCocoapodsTests() {
+	echo "------ BEGIN performCocoapodsTests ($2) ------"
 
 	local XCODE_VERSION_FILE="$1"
 	local NAME="$2"
@@ -107,9 +165,9 @@ performCarthageTests() {
 	
 	SUMMARY_LOG_OUTPUT+="\n\n+++++ $NAME +++++"
 	
-	if (( $SHOULD_SKIP_CARTHAGE )); then
+	if (( $SHOULD_SKIP_COCOAPODS )); then
 		echo "SKIPPING '$NAME'"	
-		echo "------ END performCarthageTests ------"
+		echo "------ END performCocoapodsTests ------"
 		SUMMARY_LOG_OUTPUT+="\n 🟡 SKIPPING"
 		return 0
 	fi
@@ -133,33 +191,38 @@ performCarthageTests() {
 		sudo xcode-select -s "$DESIRED_XCODE_SELECT"
 	fi
 
-	if (( $SHOULD_CARTHAGE_CHECKOUT )); then
+	if (( $SHOULD_COCOAPODS_CHECKOUT )); then
 		sh "$WORKING_DIRECTORY/checkout.sh"
 	fi
-
 
 	runXcodeBuild "$WORKSPACE_FILEPATH" "Swift-iOS"
 	runXcodeBuild "$WORKSPACE_FILEPATH" "Swift-macOS"
 	runXcodeBuild "$WORKSPACE_FILEPATH" "ObjectiveC-iOS"
 	runXcodeBuild "$WORKSPACE_FILEPATH" "ObjectiveC-macOS"
 	
-	echo "------ END performCarthageTests ------"
+	echo "------ END performCocoapodsTests ------"
 }
-
 
 
 ####################
 # Carthage-Minimum #
 ####################
 
-performCarthageTests "MINIMUM_SUPPORTED_XCODE_VERSION" "Carthage-Minimum"
+performTests "Carthage-Minimum"
 
 
 ###################
 # Carthage-Latest #
 ###################
 
-performCarthageTests "LATEST_SUPPORTED_XCODE_VERSION" "Carthage-Latest"
+performTests "Carthage-Latest"
+
+
+###################
+# Carthage-Latest #
+###################
+
+performCocoapodsTests "Cocoapods-Latest"
 
 
 ############
