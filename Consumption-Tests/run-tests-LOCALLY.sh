@@ -167,6 +167,13 @@ performTests "Carthage-Minimum"
 # Carthage-Latest #
 ###################
 
+performTests "Carthage-Latest"
+
+
+###################
+# Carthage-Latest #
+###################
+
 performTests "Cocoapods-Latest"
 
 
