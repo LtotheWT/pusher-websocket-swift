@@ -104,6 +104,7 @@ import Starscream
         self.options = options
         self.URLSession = URLSession
         self.socket = socket
+        self.socket.disableSSLCertValidation = true
         self.activityTimeoutInterval = options.activityTimeout ?? 60
         super.init()
         self.socket.delegate = self
